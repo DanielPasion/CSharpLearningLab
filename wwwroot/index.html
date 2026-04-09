@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>C# Learning Lab · from a TypeScript dev's perspective</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">C#</span>
+        <div>
+          <h1>C# Learning Lab</h1>
+          <p class="tagline">A 1–2 week intensive for TypeScript developers</p>
+        </div>
+      </div>
+      <div class="progress">
+        <span id="progress-label">0 / 0 complete</span>
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside id="lesson-list" class="sidebar">
+        <div class="sidebar-loading">Loading lessons…</div>
+      </aside>
+
+      <section id="lesson-view" class="content">
+        <div class="empty-state">
+          <h2>Pick a lesson to start</h2>
+          <p>
+            Each lesson opens with a TypeScript → C# analogy, explains one concept,
+            and ships with a live editor wired to a real C# runner on your machine.
+          </p>
+          <ul>
+            <li>Lessons 1–10 cover the language (types, classes, LINQ, generics).</li>
+            <li>Lessons 11–18 cover the .NET platform (async, DI, minimal APIs, EF Core, tests).</li>
+            <li>Lesson 19 is a capstone project you'll build in a separate terminal.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
