@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>C# Learning Lab · Redirecting…</title>
+    <!-- GitHub Pages always serves this file for unknown paths. For a single-page app
+         we just bounce the user back to /index.html and preserve any #hash so deep
+         links to a specific lesson (e.g. /#20-required-init) still resolve. -->
+    <script>
+      (function () {
+        var base = location.pathname.replace(/\/404\.html$/, "/");
+        var segments = location.pathname.split("/").filter(Boolean);
+        // On a project page the first segment is the repo name.
+        var repoBase = segments.length > 0 ? "/" + segments[0] + "/" : "/";
+        location.replace(repoBase + location.hash);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to <a href="/">the lab</a>…</p>
+  </body>
+</html>

@@ -1,51 +1,27 @@
-using CSharpLearningLab.Data;
-using CSharpLearningLab.Models;
+using CSharpLearningLab;
 using CSharpLearningLab.Services;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-// Single shared code runner — Roslyn scripting is thread-safe enough for our use case.
+// Root component: a tiny placeholder Blazor mounts at #app. The existing vanilla-JS UI
+// still renders everything — Blazor is only booted here so the .NET runtime is available
+// and our [JSInvokable] methods can be called from app.js.
+builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
+
+// HttpClient is needed by Blazor's default services — point it at the app's base address.
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
+// CodeExecutionService is stateless and expensive to construct (it holds the Roslyn
+// MetadataReference list), so register it as a singleton.
 builder.Services.AddSingleton<CodeExecutionService>();
 
-// JSON defaults are fine for this app (System.Text.Json, camelCase).
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-});
+var host = builder.Build();
 
-var app = builder.Build();
+// Give the static JSInvokable bridge a handle to the singleton runner before we start.
+// The bridge itself can't use DI because [JSInvokable] methods must be static.
+JsBridge.Initialize(host.Services.GetRequiredService<CodeExecutionService>());
 
-// Serve the static frontend (wwwroot) as the app's home.
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
-// ---- API endpoints -----------------------------------------------------------
-
-app.MapGet("/api/lessons", () =>
-    // Return a lightweight summary for the left-hand nav; full detail comes from /api/lessons/{id}.
-    LessonContent.All
-        .OrderBy(l => l.Order)
-        .Select(l => new { l.Id, l.Order, l.Title, l.Category })
-);
-
-app.MapGet("/api/lessons/{id}", (string id) =>
-{
-    var lesson = LessonContent.All.FirstOrDefault(l => l.Id == id);
-    return lesson is null ? Results.NotFound() : Results.Ok(lesson);
-});
-
-app.MapPost("/api/run", async (CodeRunRequest req, CodeExecutionService runner, CancellationToken ct) =>
-{
-    if (string.IsNullOrWhiteSpace(req.Code))
-    {
-        return Results.BadRequest(new CodeRunResponse(false, "", "Code is empty.", 0));
-    }
-
-    var result = await runner.RunAsync(req.Code, ct);
-    return Results.Ok(result);
-});
-
-// ---- Run ---------------------------------------------------------------------
-
-// Listen on a fixed local port so the run instructions are predictable.
-app.Run("http://localhost:5080");
+await host.RunAsync();

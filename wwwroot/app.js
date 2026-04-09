@@ -1,5 +1,8 @@
 // C# Learning Lab - frontend controller.
-// No framework, no build step. Just fetch() + DOM.
+// No framework, no build step. Talks to a Blazor WebAssembly runtime via JSInterop.
+// The [JSInvokable] methods it calls live in CSharpLearningLab/Services/JsBridge.cs.
+
+const ASSEMBLY = "CSharpLearningLab";
 
 const state = {
   lessons: [],
@@ -7,6 +10,26 @@ const state = {
   currentLesson: null,
   completed: loadCompleted(),
 };
+
+// ---------- .NET bridge ----------
+// Wraps DotNet.invokeMethodAsync and unwraps the JSON string that JsBridge returns.
+async function invokeDotNet(method, ...args) {
+  const json = await DotNet.invokeMethodAsync(ASSEMBLY, method, ...args);
+  return json === "null" ? null : JSON.parse(json);
+}
+
+// Resolves once the Blazor WASM runtime has fully booted and JsBridge.Initialize has run.
+// App.razor.cs fires a `blazor:ready` window event in its first OnAfterRenderAsync.
+function waitForBlazor() {
+  return new Promise((resolve) => {
+    // If DotNet is already present, Blazor is up — resolve immediately.
+    if (typeof DotNet !== "undefined") {
+      resolve();
+      return;
+    }
+    window.addEventListener("blazor:ready", () => resolve(), { once: true });
+  });
+}
 
 // ---------- persistence ----------
 function loadCompleted() {
@@ -24,10 +47,11 @@ function saveCompleted() {
 
 // ---------- bootstrap ----------
 async function init() {
+  // Block until the .NET runtime is up and JsBridge.Initialize has run.
+  await waitForBlazor();
+
   try {
-    const res = await fetch("/api/lessons");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    state.lessons = await res.json();
+    state.lessons = await invokeDotNet("ListLessons");
   } catch (err) {
     document.getElementById("lesson-list").innerHTML =
       `<div class="sidebar-loading">Failed to load lessons: ${err.message}</div>`;
@@ -113,9 +137,9 @@ async function loadLesson(id) {
   view.innerHTML = `<div class="empty-state"><p>Loading lesson…</p></div>`;
 
   try {
-    const res = await fetch(`/api/lessons/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    state.currentLesson = await res.json();
+    const lesson = await invokeDotNet("GetLesson", id);
+    if (!lesson) throw new Error("lesson not found");
+    state.currentLesson = lesson;
   } catch (err) {
     view.innerHTML = `<div class="empty-state"><p>Failed to load lesson: ${err.message}</p></div>`;
     return;
@@ -263,12 +287,7 @@ async function runCode() {
   setOutput("Running…", "idle");
 
   try {
-    const res = await fetch("/api/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    });
-    const data = await res.json();
+    const data = await invokeDotNet("RunCode", code);
 
     document.getElementById("output-time").textContent =
       data.elapsedMs != null ? `${data.elapsedMs}ms` : "";

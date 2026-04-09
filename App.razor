@@ -1,0 +1,14 @@
+@* The real UI lives in wwwroot/index.html + app.js — this component exists only so Blazor
+   has a root to mount. When the runtime finishes booting, we dispatch a window event so
+   the vanilla JS can start calling [JSInvokable] methods safely. *@
+@inject IJSRuntime Js
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Js.InvokeVoidAsync("eval", "window.dispatchEvent(new Event('blazor:ready'));");
+        }
+    }
+}

@@ -1,0 +1,61 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+# Required by actions/deploy-pages to publish to the github-pages environment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Serialize concurrent deploys so an in-flight build can't be clobbered by the next one.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        run: dotnet publish CSharpLearningLab.csproj -c Release -o publish
+
+      # Rewrite the <base href> so asset URLs resolve at /CSharpLearningLab/ on Pages.
+      # We ship `<base href="/" />` in source so local dev (http://localhost:5080) works
+      # unchanged, then rewrite at publish time for the production deployment.
+      - name: Fix base href for GitHub Pages
+        run: |
+          sed -i 's|<base href="/" />|<base href="/CSharpLearningLab/" />|' publish/wwwroot/index.html
+          if [ -f publish/wwwroot/404.html ]; then
+            sed -i 's|<base href="/" />|<base href="/CSharpLearningLab/" />|' publish/wwwroot/404.html || true
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/wwwroot
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

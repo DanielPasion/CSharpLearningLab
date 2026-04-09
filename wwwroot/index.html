@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>C# Learning Lab · from a TypeScript dev's perspective</title>
+    <!-- base href is rewritten by the GH Actions workflow before publishing so the same
+         source works both locally (/) and on GitHub Pages (/CSharpLearningLab/). -->
+    <base href="/" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -23,7 +26,7 @@
 
     <main class="layout">
       <aside id="lesson-list" class="sidebar">
-        <div class="sidebar-loading">Loading lessons…</div>
+        <div class="sidebar-loading">Loading .NET runtime… first load downloads ~20MB, cached after that.</div>
       </aside>
 
       <section id="lesson-view" class="content">
@@ -31,17 +34,29 @@
           <h2>Pick a lesson to start</h2>
           <p>
             Each lesson opens with a TypeScript → C# analogy, explains one concept,
-            and ships with a live editor wired to a real C# runner on your machine.
+            and ships with a live editor wired to a real Roslyn-backed C# compiler
+            running entirely in your browser.
           </p>
           <ul>
             <li>Lessons 1–10 cover the language (types, classes, LINQ, generics).</li>
             <li>Lessons 11–18 cover the .NET platform (async, DI, minimal APIs, EF Core, tests).</li>
-            <li>Lesson 19 is a capstone project you'll build in a separate terminal.</li>
+            <li>Lessons 19–30 cover real-world conventions you'll see in production code.</li>
+            <li>Lesson 31 is a capstone project you'll build in a separate terminal.</li>
           </ul>
         </div>
       </section>
     </main>
 
+    <!-- Blazor's required mount point. The vanilla JS UI above renders everything the
+         user sees; this div exists only so the WebAssembly runtime has somewhere to
+         attach. App.razor is effectively empty. -->
+    <div id="app" style="display:none"></div>
+
+    <!-- Boots the .NET WebAssembly runtime and loads every app assembly. -->
+    <script src="_framework/blazor.webassembly.js"></script>
+
+    <!-- Our own UI controller. It waits for the 'blazor:ready' event before calling
+         any [JSInvokable] methods — see App.razor for where that fires. -->
     <script src="app.js"></script>
   </body>
 </html>
