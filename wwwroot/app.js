@@ -19,11 +19,15 @@ async function invokeDotNet(method, ...args) {
 }
 
 // Resolves once the Blazor WASM runtime has fully booted and JsBridge.Initialize has run.
-// App.razor.cs fires a `blazor:ready` window event in its first OnAfterRenderAsync.
+// App.razor fires a `blazor:ready` window event in its first OnAfterRenderAsync and sets
+// a flag so we can detect if the event already fired before this code ran.
+//
+// IMPORTANT: `typeof DotNet !== "undefined"` is NOT a safe check — blazor.webassembly.js
+// defines the `DotNet` global immediately on script load, BEFORE the runtime boots. If
+// you call invokeMethodAsync too early you get "No call dispatcher has been set."
 function waitForBlazor() {
   return new Promise((resolve) => {
-    // If DotNet is already present, Blazor is up — resolve immediately.
-    if (typeof DotNet !== "undefined") {
+    if (window.__blazorReady) {
       resolve();
       return;
     }

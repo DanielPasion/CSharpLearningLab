@@ -8,7 +8,7 @@
     {
         if (firstRender)
         {
-            await Js.InvokeVoidAsync("eval", "window.dispatchEvent(new Event('blazor:ready'));");
+            await Js.InvokeVoidAsync("eval", "window.__blazorReady = true; window.dispatchEvent(new Event('blazor:ready'));");
         }
     }
 }
